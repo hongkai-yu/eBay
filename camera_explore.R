@@ -1,17 +1,35 @@
 # Author : Hongkai Yu (hongkaiyu1999@gmail.com)
 
-# NOTE: Please run camear_import.R to import the camera_named into the environment
+# NOTE: Please run cameara_import.R to import the camera_named into the environment
 
 library(tidyverse)
 library(magrittr)
 library(lubridate)
+library(modelr)
 
 # I. Setting up
+
 investigate_id <- function(id) {
   # easier to investigate an auction
-  camera_named %>% 
+  auctions <- camera_named %>% 
     filter(item_id == id) %>% 
-    View()
+    arrange(desc(bid_time))
+  
+  p <- ggplot(auctions, aes(x = rank(bid_time), y = bid_price)) +
+    geom_hline(aes(yintercept =  mean(buy_it_now), colour = 'BIN price'), alpha = 0.5, size = 2) +
+    geom_hline(aes(yintercept =  mean(reserve_price), colour = 'reserve price')) +
+    geom_hline(aes(yintercept =  max(bid_price), colour = 'highest price')) +
+    scale_colour_manual(values = c("blue", "red", "green")) +
+    geom_point() +
+    scale_x_continuous(breaks = seq_along(auctions)) +
+    labs(
+      title = paste("Investigation for the auction of item #", id, sep = ""),
+      x = "Rank of Bids (ordered by time)",
+      y = "Bid price"
+    )
+  print(p)
+  
+  invisible(auctions)
 }
 
 trades <- camera_named %>%
@@ -70,7 +88,29 @@ trades %>%
   geom_freqpoly(aes(x = buy_it_now), colour = 'red') +
   geom_freqpoly(aes(x = highest_bid), colour = 'blue')
 
+trades %>%
+  mutate(diff = highest_bid - buy_it_now) %>% 
+  ggplot(aes(diff)) +
+  geom_boxplot()
 
+# 7) relative vs. bid prices, a positive correlation
+camera_named %>% 
+  mutate(bid_time_relative = as.duration(bid_time - start_time) / as.duration(end_time - start_time)) %$%
+  cor(bid_time_relative, bid_price)
+  
+reg <- camera_named %>% 
+  mutate(bid_time_relative = as.duration(bid_time - start_time) / as.duration(end_time - start_time)) %$%
+  lm(bid_price ~ bid_time_relative)
+
+summary(reg)
+
+camera_named %>% 
+  mutate(bid_time_relative = as.duration(bid_time - start_time) / as.duration(end_time - start_time)) %>% 
+  add_predictions(reg) %>% 
+  ggplot(aes(bid_time_relative)) +
+  geom_point(aes(y = bid_price)) +
+  geom_line(aes(y = pred), colour = "red", size = 2)
+  
 # III. Analysis for the buy-it-now mechanism
 
 # NOTE: for the explanation of the buy-it-now mechanism, please refer to buy_it_now_mechanism.txt
@@ -98,14 +138,22 @@ trades %>%
   
 
 # 5) now I assume the condition for distinguish the buy-it-now trades from is below, which classifies 208 trades as BIN trades
-trade_BINcondtion <- trades %>% 
+trades_BINcondtion <- trades %>% 
   mutate(isBIN = (first_bid == buy_it_now & n_bids == 1))
 
-sum(trade_BINcondtion$isBIN)
+sum(trades_BINcondtion$isBIN)
 
 # 6) none of the boolean values are related to buy-it-now, since all boolean variables still vary to isBIN
-trade_BINcondtion %>% 
+trades_BINcondtion %>% 
   select(isBIN, m_X12, m_X13, m_X14) %>% View
+
+# 7) there could be more than one bids higher than buy-it-now price
+camera_named %>%
+  group_by(item_id) %>% 
+  summarize(count = sum(bid_price > buy_it_now)) %>% 
+  arrange(desc(count))
+
+investigate_id(349399376)
 
 # Explanation for the analysis:
 #   I would assume the reason that 3) 4) happen because those bidders didn't understand how BIN worked. 
@@ -159,9 +207,26 @@ camera_named %>%      # control bid_time is good enough for filter out 0s
   filter(!is.na(bid_time)) %>% 
   filter(bid_price == 0)
 
+camera_named %>% 
+  filter(bidder == "nosurprisesplease") %>% 
+  left_join(trades, by = "item_id") %>% 
+  filter(bid_price == highest_bid)
 
 trades %>% 
-  filter(n == 1) %>% 
+  filter(bid== 1) %>% 
   mutate(isBIN = highest_bid == buy_it_now) %>%
   View
   filter(isBIN == FALSE)
+
+for (b in c("m_X12", "m_X13","m_X14")) {
+  trades %>% 
+    ggplot(aes(b, buy_it_now)) +
+    geom_boxplot()
+}
+
+trades_BINcondtion %>% 
+  ggplot(aes(isBIN, highest_bid)) +
+  geom_boxplot()
+
+
+

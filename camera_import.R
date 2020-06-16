@@ -62,13 +62,14 @@ table(camera_named$bid_time > camera_named$start_time) # always true
 table(camera_named$bid_time > camera_named$end_time) # always false
 
 # III. X5, X7 (prices)
-table(camera_named$bid_price >= camera_named$reserve_price) # not always true, but all falses are due to invalid bids
+table(camera_named$bid_price >= camera_named$reserve_price) # always true
 
 summary <- camera_named %>%
   group_by(product) %>%
   summarise(highest_bid = max(bid_price),
             buy_it_now = median(buy_it_now))
-table(summary$buy_it_now == summary$highest_bid) # not always true
+table(summary$buy_it_now < summary$highest_bid) # not always true
+table(summary$buy_it_now > summary$highest_bid) # not always true
   
 # IV. X12 - X14 (logical values), they are still mysterious
 table(camera_named$X12) 
@@ -86,4 +87,4 @@ summary <- camera_named %>%
 table(summary$m_X12)
 table(summary$m_X13)
 table(summary$m_X14)
-
+mean(c(FALSE,TRUE,FALSE))
