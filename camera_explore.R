@@ -42,7 +42,7 @@ trades <- camera_named %>%
             m_X12 = as.logical(mean(X12)),
             m_X13 = as.logical(mean(X13)),
             m_X14 = as.logical(mean(X14))
-            ) %>% 
+  ) %>% 
   arrange(desc(n_bids))
 
 View(trades)
@@ -97,7 +97,7 @@ trades %>%
 camera_named %>% 
   mutate(bid_time_relative = as.duration(bid_time - start_time) / as.duration(end_time - start_time)) %$%
   cor(bid_time_relative, bid_price)
-  
+
 reg <- camera_named %>% 
   mutate(bid_time_relative = as.duration(bid_time - start_time) / as.duration(end_time - start_time)) %$%
   lm(bid_price ~ bid_time_relative)
@@ -110,7 +110,7 @@ camera_named %>%
   ggplot(aes(bid_time_relative)) +
   geom_point(aes(y = bid_price)) +
   geom_line(aes(y = pred), colour = "red", size = 2)
-  
+
 # III. Analysis for the buy-it-now mechanism
 
 # NOTE: for the explanation of the buy-it-now mechanism, please refer to buy_it_now_mechanism.txt
@@ -135,7 +135,7 @@ trades %>%
 trades %>% 
   filter(first_bid > buy_it_now) %>% 
   arrange(desc(first_bid - buy_it_now))
-  
+
 
 # 5) now I assume the condition for distinguish the buy-it-now trades from is below, which classifies 208 trades as BIN trades
 trades_BINcondtion <- trades %>% 
@@ -162,14 +162,14 @@ investigate_id(349399376)
 #   is more than the number of people used the BIN mechanism correctly (208). This is a very weird result.
 
 
- # ---------- DON'T READ, BELOW ARE SOME WORKING DRAFT ---------- #
+# ---------- DON'T READ, BELOW ARE SOME WORKING DRAFT ---------- #
 camera_named %>% # none of the boolean values has anything to do with buy_it_now
   filter(bid_price == buy_it_now) %>% 
   summarise(n = n(),
             n_X12 = sum(X12),
             n_X13 = sum(X13),
             n_X14 = sum(X14)
-            )
+  )
 
 
 camera_named %>% 
@@ -216,7 +216,7 @@ trades %>%
   filter(bid== 1) %>% 
   mutate(isBIN = highest_bid == buy_it_now) %>%
   View
-  filter(isBIN == FALSE)
+filter(isBIN == FALSE)
 
 for (b in c("m_X12", "m_X13","m_X14")) {
   trades %>% 

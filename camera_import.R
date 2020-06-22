@@ -34,7 +34,7 @@ camera_named <- camera %>%
          item_id = X2, 
          product = X3, 
          model = X4, 
-         buy_it_now = X5,    
+         buy_it_now = X5,
          seller = X6, 
          reserve_price = X7, 
          seller_feedback = X8, 
